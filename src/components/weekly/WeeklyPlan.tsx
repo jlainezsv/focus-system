@@ -1,48 +1,124 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useFocusStore } from '../../store/useFocusStore';
+import type { Weekday, WeeklyBlock, WeeklyPlan } from '../../types/focus';
 
-export const WeeklyPlan: React.FC = () => {
-  const { weeklyPlan, saveWeeklyPlan } = useFocusStore();
+const weekdays: { key: Weekday; label: string }[] = [
+  { key: 'monday', label: 'Lunes' },
+  { key: 'tuesday', label: 'Martes' },
+  { key: 'wednesday', label: 'Miércoles' },
+  { key: 'thursday', label: 'Jueves' },
+  { key: 'friday', label: 'Viernes' },
+  { key: 'saturday', label: 'Sábado' },
+  { key: 'sunday', label: 'Domingo' }
+];
 
-  const handleAddGoal = () => {
-    if (!weeklyPlan) {
-      const today = new Date();
-      const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
-      const weekEnd = new Date(today.setDate(today.getDate() + 6));
-      
-      saveWeeklyPlan({
-        weekStart: weekStart.toISOString().split('T')[0],
-        weekEnd: weekEnd.toISOString().split('T')[0],
-        goals: ['New weekly goal'],
-        days: {},
-      });
-    } else {
-      saveWeeklyPlan({
-        ...weeklyPlan,
-        goals: [...weeklyPlan.goals, 'New weekly goal'],
-      });
-    }
+function getWeekStartISO(date = new Date()): string {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 Sunday
+  const diff = (day === 0 ? -6 : 1) - day;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+const defaultBlocks: WeeklyBlock[] = [
+  { label: 'Trabajo full-time', start: '09:00', end: '17:00' },
+  { label: 'BrandBox / Ingreso', start: '18:00', end: '20:00' },
+  { label: 'Movimiento', start: '07:30', end: '08:00' },
+  { label: 'Descanso', start: '22:30', end: '23:30' }
+];
+
+export const WeeklyPlanView: React.FC = () => {
+  const { state, upsertWeeklyPlan, lockWeeklyPlan } = useFocusStore();
+  const weekStartISO = getWeekStartISO();
+  const existing = state.weeklyPlans[weekStartISO];
+
+  const [draft, setDraft] = useState<WeeklyPlan>(() => {
+    if (existing) return existing;
+    const blocksByDay: Record<Weekday, WeeklyBlock[]> = {
+      monday: defaultBlocks,
+      tuesday: defaultBlocks,
+      wednesday: defaultBlocks,
+      thursday: defaultBlocks,
+      friday: defaultBlocks,
+      saturday: defaultBlocks,
+      sunday: defaultBlocks
+    };
+    return {
+      weekStartISO,
+      locked: false,
+      blocks: blocksByDay
+    };
+  });
+
+  const locked = existing?.locked ?? draft.locked;
+
+  const canEdit = useMemo(() => !locked, [locked]);
+
+  const handleChangeBlockLabel = (day: Weekday, index: number, label: string) => {
+    if (!canEdit) return;
+    setDraft(prev => ({
+      ...prev,
+      blocks: {
+        ...prev.blocks,
+        [day]: prev.blocks[day].map((b, i) => (i === index ? { ...b, label } : b))
+      }
+    }));
+  };
+
+  const handleSave = () => {
+    if (!canEdit) return;
+    upsertWeeklyPlan(draft);
+  };
+
+  const handleLock = () => {
+    lockWeeklyPlan(weekStartISO);
   };
 
   return (
-    <div className="weekly-plan">
-      <h2>Weekly Plan</h2>
-      {weeklyPlan && (
-        <div>
-          <p>Week: {weeklyPlan.weekStart} to {weeklyPlan.weekEnd}</p>
+    <section className="card">
+      <header className="card-header">
+        <h2>Plan semanal</h2>
+        <p className="hint">Editable solo una vez por semana. Semana que inicia: {weekStartISO}</p>
+      </header>
+
+      <div className="weekly-grid">
+        <div className="weekly-grid-header">
+          <span>Día</span>
+          <span>Bloques</span>
         </div>
-      )}
-      <button onClick={handleAddGoal}>Add Weekly Goal</button>
-      <div className="weekly-goals">
-        {weeklyPlan?.goals.map((goal, index) => (
-          <div key={index} className="weekly-goal">
-            <span>{goal}</span>
+        {weekdays.map(day => (
+          <div key={day.key} className="weekly-grid-row">
+            <div className="day-label">{day.label}</div>
+            <div className="blocks-column">
+              {draft.blocks[day.key].map((block, index) => (
+                <div key={index} className="block-row">
+                  <input
+                    type="text"
+                    value={block.label}
+                    disabled={!canEdit}
+                    onChange={e =>
+                      handleChangeBlockLabel(day.key, index, e.target.value)
+                    }
+                  />
+                  <span className="time-range">
+                    {block.start} - {block.end}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
-      {(!weeklyPlan || weeklyPlan.goals.length === 0) && (
-        <p>No weekly goals set. Add one to get started!</p>
-      )}
-    </div>
+
+      <footer className="card-footer">
+        <button onClick={handleSave} disabled={!canEdit}>
+          Guardar plan semanal
+        </button>
+        <button onClick={handleLock} disabled={locked}>
+          Bloquear edición esta semana
+        </button>
+        {locked && <p className="hint">Esta semana ya está bloqueada.</p>}
+      </footer>
+    </section>
   );
 };

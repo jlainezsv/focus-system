@@ -1,32 +1,53 @@
-export interface FocusItem {
-  id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  date: string;
-  priority: 'high' | 'medium' | 'low';
-  category?: string;
-  createdAt: string;
-  updatedAt: string;
+export type NonNegotiableKey = 'movement' | 'deepBlock' | 'dayClosure';
+
+export interface NonNegotiableConfig {
+  key: NonNegotiableKey;
+  label: string;
 }
 
-export interface DailyFocus {
+export interface DailyNonNegotiablesState {
+  date: string; // YYYY-MM-DD
+  completed: Record<NonNegotiableKey, boolean>;
+}
+
+export interface DailyReview {
   date: string;
-  items: FocusItem[];
-  notes?: string;
+  whatWentWell: string;
+  whatToAdjust: string;
+  wasGoodDay: boolean;
+}
+
+export type Weekday =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
+
+export interface WeeklyBlock {
+  label: string;
+  start: string; // "09:00"
+  end: string;   // "17:00"
 }
 
 export interface WeeklyPlan {
-  weekStart: string;
-  weekEnd: string;
-  goals: string[];
-  days: {
-    [date: string]: DailyFocus;
-  };
+  weekStartISO: string; // Monday date
+  locked: boolean;
+  blocks: Record<Weekday, WeeklyBlock[]>;
 }
 
-export interface FocusSettings {
-  theme: 'light' | 'dark';
+export interface Settings {
+  nonNegotiables: NonNegotiableConfig[];
   notificationsEnabled: boolean;
-  dailyReminder?: string;
+  theme: 'light' | 'dark';
 }
+
+export interface FocusState {
+  daily: Record<string, DailyNonNegotiablesState>;
+  reviews: Record<string, DailyReview>;
+  weeklyPlans: Record<string, WeeklyPlan>;
+  settings: Settings;
+}
+

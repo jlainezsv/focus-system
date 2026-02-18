@@ -1,42 +1,29 @@
-/// <reference lib="webworker" />
+const CACHE_NAME = 'focus-system-cache-v1';
+const ASSETS = ['/', '/index.html'];
 
-const CACHE_NAME = 'focus-system-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/src/main.tsx',
-  '/src/App.tsx',
-  '/src/styles.css',
-];
+export function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // silencioso
+      });
+    });
+  }
+}
 
-declare const self: ServiceWorkerGlobalScope;
-
-self.addEventListener('install', (event) => {
+// Archivo runtime del SW (generado en build simple)
+self.addEventListener('install', (event: any) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache);
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(ASSETS);
     })
   );
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', (event: any) => {
   event.respondWith(
-    caches.match(event.request).then((response) => {
+    caches.match(event.request).then(response => {
       return response || fetch(event.request);
-    })
-  );
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
     })
   );
 });

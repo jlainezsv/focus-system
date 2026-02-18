@@ -1,29 +1,54 @@
-import React, { ReactNode } from 'react';
-import { APP_NAME } from '../../config/constants';
+import React from 'react';
+import { useFocusStore } from '../../store/useFocusStore';
 
 interface LayoutProps {
-  children: ReactNode;
+  currentView: 'daily' | 'weekly' | 'review' | 'history' | 'settings';
+  onChangeView: (view: LayoutProps['currentView']) => void;
+  children: React.ReactNode;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children }) => {
+export const Layout: React.FC<LayoutProps> = ({ currentView, onChangeView, children }) => {
+  const { state } = useFocusStore();
+  const theme = state.settings.theme;
+
   return (
-    <div className="layout">
-      <header className="header">
-        <h1>{APP_NAME}</h1>
-        <nav>
-          <a href="#daily">Daily</a>
-          <a href="#weekly">Weekly</a>
-          <a href="#review">Review</a>
-          <a href="#history">History</a>
-          <a href="#settings">Settings</a>
+    <div className={`app-root theme-${theme}`}>
+      <header className="app-header">
+        <h1>Focus System</h1>
+        <nav className="nav-tabs">
+          <button
+            className={currentView === 'daily' ? 'active' : ''}
+            onClick={() => onChangeView('daily')}
+          >
+            Hoy
+          </button>
+          <button
+            className={currentView === 'weekly' ? 'active' : ''}
+            onClick={() => onChangeView('weekly')}
+          >
+            Plan semanal
+          </button>
+          <button
+            className={currentView === 'review' ? 'active' : ''}
+            onClick={() => onChangeView('review')}
+          >
+            Cierre
+          </button>
+          <button
+            className={currentView === 'history' ? 'active' : ''}
+            onClick={() => onChangeView('history')}
+          >
+            Historial
+          </button>
+          <button
+            className={currentView === 'settings' ? 'active' : ''}
+            onClick={() => onChangeView('settings')}
+          >
+            Configuración
+          </button>
         </nav>
       </header>
-      <main className="main-content">
-        {children}
-      </main>
-      <footer className="footer">
-        <p>&copy; 2024 {APP_NAME}. All rights reserved.</p>
-      </footer>
+      <main className="app-main">{children}</main>
     </div>
   );
 };

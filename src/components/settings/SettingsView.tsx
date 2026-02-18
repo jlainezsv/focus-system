@@ -1,62 +1,84 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useFocusStore } from '../../store/useFocusStore';
-import { storage } from '../../utils/storage';
+import type { NonNegotiableConfig } from '../../types/focus';
 
 export const SettingsView: React.FC = () => {
-  const { settings, updateSettings } = useFocusStore();
+  const { state, updateSettings } = useFocusStore();
+  const [nonNegs, setNonNegs] = useState<NonNegotiableConfig[]>(state.settings.nonNegotiables);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    state.settings.notificationsEnabled
+  );
+  const [theme, setTheme] = useState<'light' | 'dark'>(state.settings.theme);
 
-  const handleThemeChange = (theme: 'light' | 'dark') => {
-    updateSettings({ theme });
+  const handleSave = () => {
+    updateSettings({
+      nonNegotiables: nonNegs,
+      notificationsEnabled,
+      theme
+    });
   };
 
-  const handleNotificationsToggle = () => {
-    updateSettings({ notificationsEnabled: !settings.notificationsEnabled });
-  };
-
-  const handleClearData = () => {
-    if (window.confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-      storage.clearAll();
-      window.location.reload();
-    }
+  const handleChangeLabel = (index: number, label: string) => {
+    setNonNegs(prev => prev.map((n, i) => (i === index ? { ...n, label } : n)));
   };
 
   return (
-    <div className="settings-view">
-      <h2>Settings</h2>
-      <div className="settings-section">
-        <h3>Theme</h3>
-        <div className="theme-options">
-          <button
-            onClick={() => handleThemeChange('light')}
-            className={settings.theme === 'light' ? 'active' : ''}
-          >
-            Light
-          </button>
-          <button
-            onClick={() => handleThemeChange('dark')}
-            className={settings.theme === 'dark' ? 'active' : ''}
-          >
-            Dark
-          </button>
-        </div>
+    <section className="card">
+      <header className="card-header">
+        <h2>Configuración</h2>
+      </header>
+
+      <div className="section">
+        <h3>No-negociables</h3>
+        <p className="hint">Puedes renombrar los tres no-negociables, pero manténlos simples.</p>
+        {nonNegs.map((n, index) => (
+          <label key={n.key} className="field">
+            <span>{n.key}</span>
+            <input
+              type="text"
+              value={n.label}
+              onChange={e => handleChangeLabel(index, e.target.value)}
+            />
+          </label>
+        ))}
       </div>
-      <div className="settings-section">
-        <h3>Notifications</h3>
-        <label>
+
+      <div className="section">
+        <label className="checkbox-row">
           <input
             type="checkbox"
-            checked={settings.notificationsEnabled}
-            onChange={handleNotificationsToggle}
+            checked={notificationsEnabled}
+            onChange={e => setNotificationsEnabled(e.target.checked)}
           />
-          Enable notifications
+          <span>Notificaciones (placeholder, para backend futuro)</span>
         </label>
       </div>
-      <div className="settings-section">
-        <h3>Data Management</h3>
-        <button onClick={handleClearData} className="danger">
-          Clear All Data
-        </button>
+
+      <div className="section">
+        <h3>Tema</h3>
+        <div className="radio-row">
+          <label>
+            <input
+              type="radio"
+              checked={theme === 'light'}
+              onChange={() => setTheme('light')}
+            />
+            <span>Claro</span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              checked={theme === 'dark'}
+              onChange={() => setTheme('dark')}
+            />
+            <span>Oscuro</span>
+          </label>
+        </div>
       </div>
-    </div>
+
+      <footer className="card-footer">
+        <button onClick={handleSave}>Guardar configuración</button>
+      </footer>
+    </section>
   );
 };

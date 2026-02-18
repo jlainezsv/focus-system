@@ -1,56 +1,36 @@
-import { DailyFocus, WeeklyPlan, FocusSettings } from '../types/focus';
+import type { FocusState } from '../types/focus';
+import { DEFAULT_SETTINGS } from '../config/constants';
 
-const STORAGE_KEYS = {
-  DAILY_FOCUS: 'focus-system-daily',
-  WEEKLY_PLAN: 'focus-system-weekly',
-  SETTINGS: 'focus-system-settings',
-  HISTORY: 'focus-system-history',
-} as const;
+const STORAGE_KEY = 'focus-system-state-v1';
 
-export const storage = {
-  // Daily Focus
-  getDailyFocus: (date: string): DailyFocus | null => {
-    const data = localStorage.getItem(`${STORAGE_KEYS.DAILY_FOCUS}-${date}`);
-    return data ? JSON.parse(data) : null;
-  },
+export function loadState(): FocusState {
+  if (typeof window === 'undefined') {
+    return createInitialState();
+  }
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return createInitialState();
+    const parsed = JSON.parse(raw) as FocusState;
+    return {
+      ...createInitialState(),
+      ...parsed,
+      settings: { ...createInitialState().settings, ...parsed.settings }
+    };
+  } catch {
+    return createInitialState();
+  }
+}
 
-  saveDailyFocus: (dailyFocus: DailyFocus): void => {
-    localStorage.setItem(
-      `${STORAGE_KEYS.DAILY_FOCUS}-${dailyFocus.date}`,
-      JSON.stringify(dailyFocus)
-    );
-  },
+export function saveState(state: FocusState) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
 
-  // Weekly Plan
-  getWeeklyPlan: (weekStart: string): WeeklyPlan | null => {
-    const data = localStorage.getItem(`${STORAGE_KEYS.WEEKLY_PLAN}-${weekStart}`);
-    return data ? JSON.parse(data) : null;
-  },
-
-  saveWeeklyPlan: (weeklyPlan: WeeklyPlan): void => {
-    localStorage.setItem(
-      `${STORAGE_KEYS.WEEKLY_PLAN}-${weeklyPlan.weekStart}`,
-      JSON.stringify(weeklyPlan)
-    );
-  },
-
-  // Settings
-  getSettings: (): FocusSettings | null => {
-    const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    return data ? JSON.parse(data) : null;
-  },
-
-  saveSettings: (settings: FocusSettings): void => {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-  },
-
-  // Clear all data
-  clearAll: (): void => {
-    Object.values(STORAGE_KEYS).forEach((key) => {
-      const keysToRemove = Object.keys(localStorage).filter((k) =>
-        k.startsWith(key)
-      );
-      keysToRemove.forEach((k) => localStorage.removeItem(k));
-    });
-  },
-};
+function createInitialState(): FocusState {
+  return {
+    daily: {},
+    reviews: {},
+    weeklyPlans: {},
+    settings: DEFAULT_SETTINGS
+  };
+}

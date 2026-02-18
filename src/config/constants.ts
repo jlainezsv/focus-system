@@ -1,23 +1,11 @@
-export const APP_NAME = 'Focus System';
-export const APP_VERSION = '1.0.0';
+import type { Settings } from '../types/focus';
 
-export const PRIORITIES = {
-  HIGH: 'high',
-  MEDIUM: 'medium',
-  LOW: 'low',
-} as const;
-
-export const THEMES = {
-  LIGHT: 'light',
-  DARK: 'dark',
-} as const;
-
-export const DATE_FORMAT = 'YYYY-MM-DD';
-
-export const DEFAULT_SETTINGS = {
-  theme: THEMES.LIGHT,
+export const DEFAULT_SETTINGS: Settings = {
+  nonNegotiables: [
+    { key: 'movement', label: 'Movimiento' },
+    { key: 'deepBlock', label: 'Bloque profundo' },
+    { key: 'dayClosure', label: 'Cierre del día' }
+  ],
   notificationsEnabled: false,
+  theme: 'dark'
 };
-
-export const MAX_DAILY_ITEMS = 10;
-export const MAX_WEEKLY_GOALS = 5;
